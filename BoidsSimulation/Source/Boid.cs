@@ -5,20 +5,27 @@ using Microsoft.Xna.Framework;
 
 namespace BoidsSimulation.Source
 {
-    public class Boid
+    public struct Transform
     {
         public Vector2 Position;
         public Vector2 Velocity;
         public float Rotation;
+    }
+    
+    public class Boid
+    {
+        public Transform Transform;
         
         public Boid(Vector2 position)
         {
-            Position = position;
-            // Initialize with random velocity
-            Velocity = new Vector2(
-                (float)(new Random().NextDouble() * 2 - 1),
-                (float)(new Random().NextDouble() * 2 - 1)
-            ) * BoidForces.MaxSpeed;
+            Transform = new Transform
+            {
+                Position = position,
+                Velocity = new Vector2(
+                    (float)(new Random().NextDouble() * 2 - 1),
+                    (float)(new Random().NextDouble() * 2 - 1)
+                ) * BoidForces.MaxSpeed
+            };
             UpdateRotation();
         }
 
@@ -45,21 +52,22 @@ namespace BoidsSimulation.Source
                 (float)(new Random().NextDouble() * 2 - 1)
             ) * BoidForces.MaxForce * 0.1f;
             
-            Velocity += acceleration * deltaTime;
-            if (Velocity.Length() > BoidForces.MaxSpeed)
+            Transform.Velocity += acceleration * deltaTime;
+            if (Transform.Velocity.Length() > BoidForces.MaxSpeed)
             {
-                Velocity.Normalize();
-                Velocity *= BoidForces.MaxSpeed;
+                Transform.Velocity.Normalize();
+                Transform.Velocity *= BoidForces.MaxSpeed;
             }
-            Position += Velocity * deltaTime;
+            Transform.Position += Transform.Velocity * deltaTime;
             UpdateRotation();
         }
         
-        private void UpdateRotation() => Rotation = (float)Math.Atan2(Velocity.Y, Velocity.X);
+        private void UpdateRotation() => Transform.Rotation =
+            (float)Math.Atan2(Transform.Velocity.Y, Transform.Velocity.X);
 
         private Vector2 CalculateTargetForce(Vector2 target)
         {
-            var desired = target - Position;
+            var desired = target - Transform.Position;
             var distance = desired.Length();
             
             var targetInfluence = 1.0f;
@@ -73,7 +81,7 @@ namespace BoidsSimulation.Source
             
             desired.Normalize();
             desired *= BoidForces.MaxSpeed * targetInfluence;
-            var steer = desired - Velocity;
+            var steer = desired - Transform.Velocity;
             
             return LimitForce(steer);
         }
@@ -85,11 +93,11 @@ namespace BoidsSimulation.Source
 
             foreach (var other in neighbors)
             {
-                var distance = Vector2.Distance(Position, other.Position);
+                var distance = Vector2.Distance(Transform.Position, other.Transform.Position);
                 
                 if (!(distance > 0) || !(distance < BoidForces.SeparationDistance)) continue;
                 
-                var diff = Position - other.Position;
+                var diff = Transform.Position - other.Transform.Position;
                 diff.Normalize();
                 
                 diff /= distance * distance;
@@ -105,7 +113,7 @@ namespace BoidsSimulation.Source
             
             steer.Normalize();
             steer *= BoidForces.MaxSpeed;
-            steer -= Velocity;
+            steer -= Transform.Velocity;
             
             return LimitForce(steer);
         }
@@ -117,7 +125,7 @@ namespace BoidsSimulation.Source
 
             foreach (var other in neighbors)
             {
-                averageVelocity += other.Velocity;
+                averageVelocity += other.Transform.Velocity;
                 count++;
             }
 
@@ -136,14 +144,14 @@ namespace BoidsSimulation.Source
 
             foreach (var other in neighbors)
             {
-                centerOfMass += other.Position;
+                centerOfMass += other.Transform.Position;
                 count++;
             }
 
             if (count <= 0) return Vector2.Zero;
             
             centerOfMass /= count;
-            var desired = centerOfMass - Position;
+            var desired = centerOfMass - Transform.Position;
             
             return LimitForce(desired);
         }

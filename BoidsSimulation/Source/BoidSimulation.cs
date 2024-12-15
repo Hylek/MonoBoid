@@ -20,9 +20,9 @@ public class BoidSimulation : Game
     private Grid _grid;
     
     private VertexPositionColor[] _gridLines;
-    private Texture2D _pixel;
+    private Texture2D _lineTriangle;
     private KeyboardState _prevKeyState;
-    private bool _showDebug = true;
+    private bool _showDebug;
     private SpriteBatch _spriteBatch;
     private Vector2 _target;
 
@@ -66,8 +66,8 @@ public class BoidSimulation : Game
     protected override void LoadContent()
     {
         _spriteBatch = new SpriteBatch(GraphicsDevice);
-        _pixel = new Texture2D(GraphicsDevice, 1, 1);
-        _pixel.SetData([Color.White]);
+        _lineTriangle = new Texture2D(GraphicsDevice, 1, 1);
+        _lineTriangle.SetData([Color.White]);
     }
 
     protected override void Update(GameTime gameTime)
@@ -92,10 +92,10 @@ public class BoidSimulation : Game
 
     private static void WrapPosition(Boid boid)
     {
-        if (boid.Position.X < 0) boid.Position.X = ScreenWidth;
-        if (boid.Position.X > ScreenWidth) boid.Position.X = 0;
-        if (boid.Position.Y < 0) boid.Position.Y = ScreenHeight;
-        if (boid.Position.Y > ScreenHeight) boid.Position.Y = 0;
+        if (boid.Transform.Position.X < 0) boid.Transform.Position.X = ScreenWidth;
+        if (boid.Transform.Position.X > ScreenWidth) boid.Transform.Position.X = 0;
+        if (boid.Transform.Position.Y < 0) boid.Transform.Position.Y = ScreenHeight;
+        if (boid.Transform.Position.Y > ScreenHeight) boid.Transform.Position.Y = 0;
     }
 
     protected override void Draw(GameTime gameTime)
@@ -125,7 +125,7 @@ public class BoidSimulation : Game
 
     private void DrawBoidTargetSquare()
     {
-        _spriteBatch.Draw(_pixel, new Rectangle((int)_target.X - 5, (int)_target.Y - 5, 10, 10),
+        _spriteBatch.Draw(_lineTriangle, new Rectangle((int)_target.X - 5, (int)_target.Y - 5, 10, 10),
             Color.Yellow);
     }
 
@@ -141,13 +141,13 @@ public class BoidSimulation : Game
         
         for (var i = 0; i < triangle.Length; i++)
         {
-            var cos = (float)Math.Cos(boid.Rotation);
-            var sin = (float)Math.Sin(boid.Rotation);
+            var cos = (float)Math.Cos(boid.Transform.Rotation);
+            var sin = (float)Math.Sin(boid.Transform.Rotation);
             var rotated = new Vector2(
                 triangle[i].X * cos - triangle[i].Y * sin,
                 triangle[i].X * sin + triangle[i].Y * cos
             );
-            triangle[i] = rotated + boid.Position;
+            triangle[i] = rotated + boid.Transform.Position;
         }
         
         DrawTriangle(triangle[0], triangle[1], triangle[2], Color.LightBlue);
@@ -185,7 +185,7 @@ public class BoidSimulation : Game
     private void DebugDrawBoidNeighborhoods()
     {
         _spriteBatch.Begin(SpriteSortMode.Deferred, BlendState.Additive);
-        foreach (var boid in _boids) DrawCircle(boid.Position, BoidForces.PerceptionRadius, Color.Green * 1f);
+        foreach (var boid in _boids) DrawCircle(boid.Transform.Position, BoidForces.PerceptionRadius, Color.Green * 1f);
         _spriteBatch.End();
     }
 
@@ -222,7 +222,7 @@ public class BoidSimulation : Game
         var angle = (float)Math.Atan2(edge.Y, edge.X);
 
         _spriteBatch.Draw(
-            _pixel,
+            _lineTriangle,
             start,
             null,
             color,
